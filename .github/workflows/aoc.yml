@@ -1,0 +1,28 @@
+on: [push]
+
+name: AOC
+
+jobs:
+  build_and_test:
+    name: "2020"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install cargo-aoc
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-aoc
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - name: Run cargo-aoc
+        uses: actions-rs/cargo@v1
+        with:
+          command: aoc
