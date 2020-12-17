@@ -3,7 +3,7 @@ use std::ops::Add;
 use std::ops::Index;
 
 // An (x,y) pair
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct Point {
     x: i32,
     y: i32
@@ -46,7 +46,7 @@ impl  Index<Point> for Field {
 #[aoc_generator(day3)]
 pub fn input_generator(input: &str) -> Vec<String> {
     input.lines()
-         .map(|s| s.to_owned())
+         .map(|s| s.trim().to_owned())
          .collect()
 }
 
@@ -59,10 +59,33 @@ pub fn solve_part1(input: &[String]) -> u32 {
     let field = Field{rows};
 
     // solve
-    let path = FieldPath{field: &field, pos: Point{x:0, y:0}, direction: Point{x:3, y:1}};
+    count_trees(&field, Point{x:0, y:0}, Point{x:3, y:1})
+}
+
+#[aoc(day3, part2)]
+pub fn solve_part2(input: &[String]) -> u64 {
+    let rows: Vec<String> = input.iter()
+                                 .map(|s| s.to_owned())
+                                 .collect();
+    let field = Field{rows};
+
+    // solve
+    let start = Point{x:0, y:0};
+    let t1 = count_trees(&field, start, Point{x:1, y:1});
+    let t2 = count_trees(&field, start, Point{x:3, y:1});
+    let t3 = count_trees(&field, start, Point{x:5, y:1});
+    let t4 = count_trees(&field, start, Point{x:7, y:1});
+    let t5 = count_trees(&field, start, Point{x:1, y:2});
+    t1 as u64 * t2 as u64 * t3 as u64 * t4 as u64 * t5 as u64
+}
+
+fn count_trees(field: &Field, start: Point, direction: Point) -> u32 {
+    let path = FieldPath{field: &field, pos: start, direction: direction};
     let steps = path.map(|p| field[p].chars().nth(0).unwrap());
     let trees = steps.filter(|&c| c == '#');
-    trees.count() as u32
+    let count = trees.count() as u32;
+    println!("Direction {:?} found {:} trees", direction, count);
+    count
 }
 
 // A path through a Field
