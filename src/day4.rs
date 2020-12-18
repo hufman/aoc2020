@@ -1,4 +1,5 @@
-extern crate uom;
+extern crate regex;
+use self::regex::Regex;
 
 #[aoc_generator(day4)]
 pub fn input_generator(input: &str) -> Vec<String> {
@@ -14,10 +15,10 @@ pub fn solve_part1(lines: &[String]) -> i32 {
 
 #[derive(Debug)]
 struct Card {
-    byr: Option<String>,
-    iyr: Option<String>,
-    eyr: Option<String>,
-    hgt: Option<String>,
+    byr: Option<i32>,
+    iyr: Option<i32>,
+    eyr: Option<i32>,
+    hgt: Option<Height>,
     hcl: Option<String>,
     ecl: Option<String>,
     pid: Option<String>,
@@ -25,13 +26,22 @@ struct Card {
 }
 impl Card {
     fn is_valid(self: &Self) -> bool {
-        self.byr.is_some() &&
-        self.iyr.is_some() &&
-        self.eyr.is_some() &&
-        self.hgt.is_some() &&
-        self.hcl.is_some() &&
-        self.ecl.is_some() &&
-        self.pid.is_some()
+        lazy_static! {
+            static ref ECL_MATCHER: Regex = Regex::new(r"^(amb|blu|brn|gry|grn|hzl|oth)$").unwrap();
+            static ref HCL_MATCHER: Regex = Regex::new(r"^#[0-9a-f]{6}$").unwrap();
+            static ref PID_MATCHER: Regex = Regex::new(r"^[0-9]{9}$").unwrap();
+        }
+        self.byr.as_ref().filter(|&n| &1920<=n && n<=&2002).is_some() &&
+        self.iyr.as_ref().filter(|&n| &2010<=n && n<=&2020).is_some() &&
+        self.eyr.as_ref().filter(|&n| &2020<=n && n<=&2030).is_some() &&
+        self.hgt.as_ref().filter(|n| {
+            match n {
+                Height::CM(ref i) => &150 <= i && i <= &193,
+                Height::IN(ref i) => &59 <= i && i <= &76,
+            }}).is_some() &&
+        self.hcl.as_ref().filter(|n| HCL_MATCHER.is_match(&n)).is_some() &&
+        self.ecl.as_ref().filter(|n| ECL_MATCHER.is_match(&n)).is_some() &&
+        self.pid.as_ref().filter(|n| PID_MATCHER.is_match(&n)).is_some()
     }
 }
 
@@ -43,10 +53,10 @@ fn parse_card(line: &str) -> Card {
         if pieces.len() == 2 {
             let value = pieces[1].to_owned();
             match pieces[0] {
-                "byr" => card.byr = Some(value),
-                "iyr" => card.iyr = Some(value),
-                "eyr" => card.eyr = Some(value),
-                "hgt" => card.hgt = Some(value),
+                "byr" => card.byr = value.parse::<i32>().ok(),
+                "iyr" => card.iyr = value.parse::<i32>().ok(),
+                "eyr" => card.eyr = value.parse::<i32>().ok(),
+                "hgt" => card.hgt = parse_height(pieces[1]),
                 "hcl" => card.hcl = Some(value),
                 "ecl" => card.ecl = Some(value),
                 "pid" => card.pid = Some(value),
@@ -59,3 +69,22 @@ fn parse_card(line: &str) -> Card {
     card
 }
 
+#[derive(Clone, Copy, Debug)]
+enum Height {
+    IN(i32),
+    CM(i32),
+}
+fn parse_height(height: &str) -> Option<Height> {
+    lazy_static! {
+        static ref HEIGHT_MATCHER: Regex = Regex::new(r"^([0-9]*)(cm|in)$").unwrap();
+    }
+    HEIGHT_MATCHER.captures(height).map(|m| {
+        let size = m.get(1).unwrap().as_str().parse::<i32>().unwrap();
+        let unit = m.get(2).unwrap().as_str();
+        match unit {
+            "cm" => Some(Height::CM(size)),
+            "in" => Some(Height::IN(size)),
+            _ => None
+        }
+    }).flatten()
+}
